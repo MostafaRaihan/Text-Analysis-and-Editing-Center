@@ -211,32 +211,51 @@ export default function App() {
 
   // ------------------ Voice Typing ------------------
   const startListening = () => {
-    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-      alert("Your browser does not support Speech Recognition");
-      return;
-    }
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+    alert("Your browser does not support Speech Recognition");
+    return;
+  }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = voiceLang;
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.onresult = (event) => {
-      let transcript = "";
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        transcript += event.results[i][0].transcript;
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  const recognition = new SpeechRecognition();
+  recognition.lang = voiceLang;
+  recognition.continuous = true;
+  recognition.interimResults = true; // true রাখলেও state-এ use করব না
+
+  recognition.onresult = (event) => {
+    let finalTranscript = "";
+
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const result = event.results[i];
+      if (result.isFinal) {
+        finalTranscript += result[0].transcript + " ";
       }
-      setText((prev) => prev + transcript);
-    };
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
+    }
+
+    if (finalTranscript) {
+      setText((prev) => prev + finalTranscript); // শুধুমাত্র final append
+    }
   };
-  const stopListening = () => {
-    recognitionRef.current?.stop();
-    setIsListening(false);
+
+  recognition.onend = () => {
+    if (isListening) {
+      setTimeout(() => recognition.start(), 300); // auto-restart
+    } else {
+      setIsListening(false);
+    }
   };
+
+  recognitionRef.current = recognition;
+  recognition.start();
+  setIsListening(true);
+};
+
+const stopListening = () => {
+  recognitionRef.current?.stop();
+  setIsListening(false);
+};
 
   // ------------------ Auto Save & Load ------------------
   useEffect(() => {
