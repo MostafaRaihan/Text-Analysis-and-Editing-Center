@@ -1,0 +1,403 @@
+/* ---------- General ---------- */
+body {
+  margin: 0;
+  padding: 0;
+  font-family:Arial, Helvetica, sans-serif;
+  color: white;
+  transition: background 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+.name{
+  font-size: 2rem;
+  color:black;
+  text-shadow: 0 0 15px white;
+  font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+}
+
+h1, h2, h3 {
+  margin: 0 0 12px 0;
+  font-weight: 600;
+  color: white;
+}
+
+option {
+  background-color: black;
+  color: white;
+  cursor: pointer;
+}
+
+/* ---------- Inputs & Buttons (Common) ---------- */
+input, select, button, textarea {
+  font-family: inherit;
+}
+
+input, select {
+  height: 40px;
+  border-radius: 10px;
+  padding: 0 12px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  font-weight: 500;
+  background: #222;
+  color: white;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #6a11cb;
+  box-shadow: 0 0 10px rgba(106,17,203,0.2);
+}
+
+button {
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  padding: 0 16px;
+  height: 40px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border: 2px solid white;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.download{
+  background-color:green;
+  border:2px solid white;
+  cursor: pointer;
+}
+.hidden{
+  visibility: hidden;
+}
+.select{
+  background: linear-gradient(135deg, #6a11cb, #2575fc);
+  cursor: pointer;
+  text-align: center;
+}
+
+/* ---------- App Container ---------- */
+.app-container {
+  padding: 25px;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  width: 90%;
+  max-width: 1400px;
+  min-width: 320px;
+}
+
+/* ---------- Head-top / Search & Replace ---------- */
+.head-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.head-top h2 {
+  flex-shrink: 0;
+}
+
+.head-top .search-find {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.head-top .search-find input,
+.head-top .search-find button {
+  height: 38px;
+  font-size: 14px;
+  border-radius: 8px;
+}
+
+/* ---------- Toolbar / Top Controls ---------- */
+.top-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.top-controls > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+/* ---------- Editor Row ---------- */
+.editor-row {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ---------- Left & Right Sections ---------- */
+.left-section,
+.section-left-2,
+.right-section {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* ---------- Textarea ---------- */
+textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  box-shadow: inset 0 3px 6px rgba(0,0,0,0.05);
+  min-height: 250px;
+  background: #222;
+  color: white;
+}
+
+/* ---------- Stats Section ---------- */
+.stats {
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  text-align: center;
+}
+
+/* ---------- Preview Section ---------- */
+.preview {
+  padding: 15px;
+  background-color: #fff;
+  color: black;
+  border-radius: 15px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.05);
+  white-space: pre-wrap;
+  transition: transform 0.2s ease;
+}
+
+.preview:hover {
+  transform: scale(1.01);
+}
+
+
+/* ---------- Word Cloud ---------- */
+.word-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+.word-cloud span {
+  padding: 5px 10px;
+  border-radius: 15px;
+  color: #fff;
+  font-weight: 200;
+  transition: transform 0.3s ease, background 0.3s ease;
+  cursor: default;
+  text-align: center;
+  text-shadow: 0 0 15px black;
+  font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+}
+
+.word-cloud span:hover {
+  transform: scale(1.3) rotate(5deg);
+  background: black;
+  color: black;
+  border: 2px solid black;
+  padding: 10px 15px;
+}
+
+/* ---------- Creative Footer ---------- */
+.creative-footer {
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  color:black;
+  padding: 15px;
+  text-shadow: 0 0 10px white;
+  font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+}
+
+.creative-footer small {
+  font-size: 1rem;
+}
+
+.creative-footer a {
+  color: white;
+  padding: 0 5px;
+  text-decoration: none;
+  transition: color 0.3s ease;
+  padding: 0 10px;
+}
+
+.creative-footer a:hover {
+  color: yellow;
+  font-size:1.5rem;
+}
+
+/* ---------- Responsive ---------- */
+
+/* Mobile ≤599px */
+@media (max-width: 599px) {
+  .editor-row { flex-direction: column; }
+  .left-section { display: none; }
+  .section-left-2 { display: block; }
+  .right-section { width: 100%; }
+  .hidden{
+    display: none;
+  }
+  .top-controls > div { width: 100%; gap: 6px; }
+  .nav-1 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    width: 100%;
+  }
+  .nav-1 button,
+  .nav-1 select { width: 100%; }
+
+  .head-top { flex-direction: column; gap: 8px; }
+  .head-top .search-find { flex-direction: column; width: 100%; gap: 6px; }
+  .head-top .search-find input,
+  .head-top .search-find button { width: 100%; }
+
+  .nav-2 {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .nav-2 .left-group {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .nav-2 .right-group {
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+    width: 100%;
+  }
+  .creative-footer span {
+    display: none;
+  }
+  .creative-footer small {
+    font-size: 0.9rem;
+    display: block;
+    text-align: center;
+  }
+}
+
+/* Tablet 600px–899px */
+@media (min-width: 600px) and (max-width: 899px) {
+  .editor-row { flex-direction: column; }
+  .left-section { display: none; }
+  .section-left-2 { display: block; }
+  .right-section { width: 100%; }
+
+  .head-top { flex-direction: column; align-items: flex-start; gap: 8px; width: 100%; }
+  .head-top h2 { margin-bottom: 4px; }
+  .head-top .search-find { flex-wrap: nowrap; gap: 6px; width: 100%; }
+  .head-top .search-find input,
+  .head-top .search-find button { flex: 1; }
+
+  .top-controls > div { width: 100%; gap: 8px; }
+  .nav-1 { display: flex; flex-wrap: wrap; gap: 8px; }
+  .nav-1 button { flex: 1 1 calc(33.33% - 8px); min-width: 80px; }
+
+  .nav-2 { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .nav-2 .left-group, .nav-2 .right-group { display: flex; gap: 10px; align-items: center; }
+}
+
+/* ---------- Desktop ≥900px ---------- */
+@media (min-width: 900px) {
+  /* Editor Row */
+  .editor-row { 
+    flex-direction: row-reverse; 
+    gap: 25px; 
+    align-items: flex-start; 
+  }
+
+  /* Left & Right Sections */
+  .left-section { width: 25%; display: flex; }
+  .section-left-2 { display: none; }
+  .right-section { width: 75%; }
+
+  .left-section .word-cloud {
+    padding: 20px;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50px;
+    box-shadow: inset 0 5px 15px rgba(0,0,0,0.05);
+  }
+
+  /* Nav-2 */
+  .nav-2 { 
+    display: flex; 
+    justify-content: space-between; 
+    gap: 20px; 
+    flex-wrap: wrap; 
+  }
+  .nav-2 .left-group, .nav-2 .right-group { 
+    display: flex; 
+    gap: 10px; 
+    align-items: center; 
+  }
+
+  /* Nav-1 */
+  .nav-1 { 
+    display: flex; 
+    gap: 12px; 
+    width: 100%; 
+  }
+  .nav-1 button, .nav-1 select {
+    flex: 1 1 auto;
+    min-width: 100px;
+    max-width: 200px;
+  }
+
+  /* ---------- Head-top / Search & Replace ---------- */
+  .head-top { 
+    flex-direction: row;    
+    align-items: center;   
+    justify-content: space-between;
+    gap: 20px;              
+    flex-wrap: nowrap;        
+  }
+
+  .head-top h2 {
+    margin: 0;                    
+    flex-shrink: 0;               
+    font-size: 2rem;
+  }
+
+  .head-top .search-find {
+    display: flex;
+    flex-wrap: nowrap;           
+    gap: 10px;                    
+    align-items: center;
+  }
+
+  .head-top .search-find input {
+    width: auto;                  /* input natural width, button পাশে */
+  }
+}
