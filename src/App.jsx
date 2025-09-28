@@ -3,7 +3,10 @@ import "./App.css";
 import jsPDF from "jspdf";
 import { saveAs } from "file-saver";
 import * as XLSX from "xlsx";
-import { Document, Packer, Paragraph } from "docx";
+import { Document, Packer, Paragraph, TextRun } from "docx";
+
+// যদি আপনার কাছে SolaimanLipi TTF আছে, jsPDF-compatible ফাইল import করতে পারেন
+// import solaimanLipi from "./SolaimanLipi-normal.js";
 
 export default function App() {
   const [text, setText] = useState("");
@@ -18,7 +21,6 @@ export default function App() {
   const [replaceWord, setReplaceWord] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [voiceLang, setVoiceLang] = useState("en-US");
-  const previewRef = useRef(null);
   const recognitionRef = useRef(null);
 
   // ------------------ History ------------------
@@ -61,7 +63,7 @@ export default function App() {
   const removeLineBreaks = () => updateText(text.replace(/\n+/g, " "));
   const sortWords = () =>
     updateText(text.split(/\s+/).sort((a, b) => a.localeCompare(b)).join(" "));
-  
+
   const resetAll = () => {
     setText("");
     setHistory([]);
@@ -74,7 +76,6 @@ export default function App() {
     setFindWord("");
     setReplaceWord("");
     setVoiceLang("en-US");
-  
   };
 
   // ------------------ Word Frequencies ------------------
@@ -152,36 +153,53 @@ export default function App() {
   // ------------------ Export ------------------
   const downloadTXT = () =>
     saveAs(new Blob([text], { type: "text/plain" }), "text.txt");
-  
+
   const downloadPDF = () => {
-  const margin = 25.4; // 1 inch margin in mm
-  const pageWidth = 210; // A4 width in mm
-  const pageHeight = 297; // A4 height in mm
-  const doc = new jsPDF({
-    unit: "mm",
-    format: "a4"
-  });
+    const margin = 25.4;
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
 
-  const lines = doc.splitTextToSize(text, pageWidth - margin * 2); // margin adjust
-  let cursorY = margin;
+    const standardFonts = ["helvetica", "times", "courier"];
+    const lowerFont = fontFamily.toLowerCase();
+    doc.setFont(standardFonts.includes(lowerFont) ? lowerFont : "helvetica");
 
-  lines.forEach((line) => {
-    if (cursorY > pageHeight - margin) {
-      doc.addPage();
-      cursorY = margin;
-    }
-    doc.text(margin, cursorY, line);
-    cursorY += 7; // line height
-  });
+    const lines = doc.splitTextToSize(text, pageWidth - margin * 2);
+    let cursorY = margin;
+    lines.forEach((line) => {
+      if (cursorY > pageHeight - margin) {
+        doc.addPage();
+        cursorY = margin;
+      }
+      doc.text(margin, cursorY, line);
+      cursorY += 7;
+    });
 
-  doc.save("text.pdf");
-};
-
+    doc.save("text.pdf");
+  };
 
   const downloadDOCX = () => {
-    const docx = new Document({ sections: [{ children: [new Paragraph(text)] }] });
-    Packer.toBlob(docx).then((blob) => saveAs(blob, "text.docx"));
+    const doc = new Document({
+      sections: [
+        {
+          children: [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: text,
+                  font: fontFamily,
+                  size: fontSize * 2,
+                }),
+              ],
+            }),
+          ],
+        },
+      ],
+    });
+
+    Packer.toBlob(doc).then((blob) => saveAs(blob, "text.docx"));
   };
+
   const downloadCSV = () => {
     const ws = XLSX.utils.json_to_sheet(
       Object.entries(wordFrequencies).map(([word, count]) => ({ word, count }))
@@ -190,6 +208,7 @@ export default function App() {
     XLSX.utils.book_append_sheet(wb, ws, "freq");
     XLSX.writeFile(wb, "frequency.csv");
   };
+
   const downloadJSON = () => {
     saveAs(
       new Blob([JSON.stringify({ text, frequencies: wordFrequencies }, null, 2)], {
@@ -212,51 +231,38 @@ export default function App() {
 
   // ------------------ Voice Typing ------------------
   const startListening = () => {
-  if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-    alert("Your browser does not support Speech Recognition");
-    return;
-  }
+    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+      alert("Your browser does not support Speech Recognition");
+      return;
+    }
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.lang = voiceLang;
+    recognition.continuous = true;
+    recognition.interimResults = true;
 
-  const SpeechRecognition =
-    window.SpeechRecognition || window.webkitSpeechRecognition;
-
-  const recognition = new SpeechRecognition();
-  recognition.lang = voiceLang;
-  recognition.continuous = true;
-  recognition.interimResults = true; // true রাখলেও state-এ use করব না
-
-  recognition.onresult = (event) => {
-    let finalTranscript = "";
-
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      const result = event.results[i];
-      if (result.isFinal) {
-        finalTranscript += result[0].transcript + " ";
+    recognition.onresult = (event) => {
+      let finalTranscript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        if (result.isFinal) finalTranscript += result[0].transcript + " ";
       }
-    }
+      if (finalTranscript) setText((prev) => prev + finalTranscript);
+    };
 
-    if (finalTranscript) {
-      setText((prev) => prev + finalTranscript); // শুধুমাত্র final append
-    }
+    recognition.onend = () => {
+      if (isListening) setTimeout(() => recognition.start(), 300);
+      else setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
   };
-
-  recognition.onend = () => {
-    if (isListening) {
-      setTimeout(() => recognition.start(), 300); // auto-restart
-    } else {
-      setIsListening(false);
-    }
+  const stopListening = () => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
   };
-
-  recognitionRef.current = recognition;
-  recognition.start();
-  setIsListening(true);
-};
-
-const stopListening = () => {
-  recognitionRef.current?.stop();
-  setIsListening(false);
-};
 
   // ------------------ Auto Save & Load ------------------
   useEffect(() => {
@@ -268,41 +274,40 @@ const stopListening = () => {
     localStorage.setItem("advanced_text_autosave", JSON.stringify({ text }));
   }, [text]);
 
-  
   // ------------------ Keyboard Shortcuts ------------------
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.ctrlKey || e.metaKey) {
         switch (e.key.toLowerCase()) {
-          case "z": // Ctrl+Z = Undo
+          case "z":
             e.preventDefault();
             undo();
             break;
-          case "y": // Ctrl+Y = Redo
+          case "y":
             e.preventDefault();
             redo();
             break;
-          case "s": // Ctrl+S = Save TXT
+          case "s":
             e.preventDefault();
             downloadTXT();
             break;
-          case "p": // Ctrl+P = Save PDF
+          case "p":
             e.preventDefault();
             downloadPDF();
             break;
-          case "d": // Ctrl+D = Save DOCX
+          case "d":
             e.preventDefault();
             downloadDOCX();
             break;
-          case "f": // Ctrl+F = Find
+          case "f":
             e.preventDefault();
             document.querySelector(".input-sc")?.focus();
             break;
-          case "r": // Ctrl+R = Replace
+          case "r":
             e.preventDefault();
             handleFindReplace();
             break;
-          case "l": // Ctrl+L = Clear All
+          case "l":
             e.preventDefault();
             resetAll();
             break;
@@ -317,9 +322,9 @@ const stopListening = () => {
 
   return (
     <div className="app-container">
+      {/* ---------------- UI ---------------- */}
       <div className="head-top">
-        <h2 className="name">Text Analysis & Editing Center</h2>
-
+        <h2>Text Analysis & Editing Center</h2>
         <div className="search-find">
           <label>Search Word</label>
           <input
@@ -328,7 +333,6 @@ const stopListening = () => {
             onChange={(e) => setFindWord(e.target.value)}
           />
           <button onClick={handleSearch}>Search</button>
-          <button className="hidden"></button>
           <label>Replace With</label>
           <input
             className="input-sc"
@@ -339,26 +343,22 @@ const stopListening = () => {
         </div>
       </div>
 
-      {/* ---------- nav-2 ---------- */}
       <div className="nav-2">
-        {/* Left side */}
         <div className="left-group">
           <label>Max</label>
           <input
             type="number"
-            className="input-sc"
             value={charLimit}
             onChange={(e) => setCharLimit(Number(e.target.value))}
           />
           <label>Size</label>
           <input
             type="number"
-            className="input-sc"
             value={fontSize}
             onChange={(e) => setFontSize(Number(e.target.value))}
           />
           <label>Fonts</label>
-          <select className="input-sc" value={fontFamily} onChange={(e) => setFontFamily(e.target.value)}>
+          <select value={fontFamily} onChange={(e) => setFontFamily(e.target.value)}>
             <option>Arial</option>
             <option>Courier New</option>
             <option>Georgia</option>
@@ -369,10 +369,9 @@ const stopListening = () => {
           </select>
         </div>
 
-        {/* Right side */}
         <div className="right-group">
-          <button onClick={resetAll} className="reset">Reset</button>
-          <select className="download"
+          <button onClick={resetAll}>Reset</button>
+          <select
             onChange={(e) => {
               const val = e.target.value;
               if (val === "txt") downloadTXT();
@@ -380,7 +379,7 @@ const stopListening = () => {
               if (val === "docx") downloadDOCX();
               if (val === "csv") downloadCSV();
               if (val === "json") downloadJSON();
-              e.target.value = ""; // reset select
+              e.target.value = "";
             }}
           >
             <option value="">Download File</option>
@@ -394,7 +393,6 @@ const stopListening = () => {
       </div>
 
       <div className="editor-row">
-        {/* -------- Left Section -------- */}
         <div className="left-section">
           <div className="word-cloud">
             {Object.entries(wordFrequencies)
@@ -404,6 +402,7 @@ const stopListening = () => {
                   key={word}
                   style={{
                     fontSize: `${14 + count * 2}px`,
+                    fontFamily,
                     color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`,
                   }}
                   title={`Count: ${count}`}
@@ -414,7 +413,6 @@ const stopListening = () => {
           </div>
         </div>
 
-        {/* -------- Right Section -------- */}
         <div className="right-section">
           <textarea
             style={{ fontSize: fontSize + "px", fontFamily }}
@@ -432,79 +430,20 @@ const stopListening = () => {
             <p>Avg Word Length: {avgWordLength()}</p>
             <p>Avg Sentence Length: {avgSentenceLength()}</p>
           </div>
+
           <div className="top-controls">
-            <div className="nav-1">
-              <button onClick={undo}>↩️ Undo</button>
-              <button onClick={redo}>↪️ Redo</button>
-              <select className="select"
-                onChange={(e) => {
-                  const action = e.target.value;
-                  if (action === "upper") toUpper();
-                  if (action === "lower") toLower();
-                  if (action === "title") toTitleCase();
-                  if (action === "sentence") toSentenceCase();
-                  if (action === "spaces") removeExtraSpaces();
-                  if (action === "lines") removeLineBreaks();
-                  if (action === "sort") sortWords();
-                }}
-              >
-                <option value="">-- Select Action --</option>
-                <option value="upper">UPPER</option>
-                <option value="lower">lower</option>
-                <option value="title">Title Case</option>
-                <option value="sentence">Sentence Case</option>
-                <option value="spaces">Remove Extra Spaces</option>
-                <option value="lines">Remove Line Breaks</option>
-                <option value="sort">Sort Words</option>
-              </select>
-              <select className="select" value={voiceLang} onChange={(e) => setVoiceLang(e.target.value)}>
-                <option value="en-US">English (US)</option>
-                <option value="en-GB">English (UK)</option>
-                <option value="bn-BD">Bangla</option>
-                <option value="hi-IN">Hindi</option>
-                <option value="es-ES">Spanish</option>
-                <option value="fr-FR">French</option>
-              </select>
-              <button onClick={isListening ? stopListening : startListening}>
-                {isListening ? "Stop Voice" : "Start Voice"}
-              </button>
-              <button onClick={speakText}>Read Text</button>
-            </div>
+            <button onClick={undo}>↩️ Undo</button>
+            <button onClick={redo}>↪️ Redo</button>
+            <button onClick={isListening ? stopListening : startListening}>
+              {isListening ? "Stop Voice" : "Start Voice"}
+            </button>
+            <button onClick={speakText}>Read Text</button>
           </div>
 
-          <div className="preview" ref={previewRef}>
+          <div className="preview" style={{ fontFamily, fontSize: fontSize + "px", whiteSpace: "pre-wrap" }}>
             <h2>Live Preview</h2>
-            <div style={{ whiteSpace: "pre-wrap", textAlign: "left",fontSize: fontSize + "px", fontFamily }}>
-              {renderPreview()}
-            </div>
+            {renderPreview()}
           </div>
-          <footer className="creative-footer">
-            <small>
-              © 2025 
-              <a href="https://www.facebook.com/m.mostafaraihan/" target="_blank" rel="noopener noreferrer">Mostafa Raihan</a>
-              <span> | Institute Of Computer Science and Technology</span>
-            </small>
-          </footer>
-
-        </div>
-      </div>
-
-      <div className="left-section section-left-2">
-        <div className="word-cloud">
-          {Object.entries(wordFrequencies)
-            .slice(0, charLimit)
-            .map(([word, count]) => (
-              <span
-                key={word}
-                style={{
-                  fontSize: `${14 + count * 2}px`,
-                  color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`,
-                }}
-                title={`Count: ${count}`}
-              >
-                {word} ({count})
-              </span>
-            ))}
         </div>
       </div>
     </div>
