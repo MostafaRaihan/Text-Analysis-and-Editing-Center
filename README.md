@@ -31,6 +31,10 @@ Edit, transform, analyze, and export text into multiple formats with ease 🚀
 
 ---
 
+## Live Demo
+
+https://texteditraihan.netlify.app/
+
 ## 📦 Installation & Setup
 
 ### 1️⃣ Clone the Repository
