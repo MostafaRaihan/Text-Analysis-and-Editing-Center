@@ -5,9 +5,6 @@ import { saveAs } from "file-saver";
 import * as XLSX from "xlsx";
 import { Document, Packer, Paragraph, TextRun } from "docx";
 
-// যদি আপনার কাছে SolaimanLipi TTF আছে, jsPDF-compatible ফাইল import করতে পারেন
-// import solaimanLipi from "./SolaimanLipi-normal.js";
-
 export default function App() {
   const [text, setText] = useState("");
   const [history, setHistory] = useState([]);
@@ -319,12 +316,11 @@ export default function App() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [text, findWord, replaceWord]);
-
   return (
     <div className="app-container">
-      {/* ---------------- UI ---------------- */}
       <div className="head-top">
-        <h2>Text Analysis & Editing Center</h2>
+        <h2 className="name">Text Analysis & Editing Center</h2>
+
         <div className="search-find">
           <label>Search Word</label>
           <input
@@ -333,6 +329,7 @@ export default function App() {
             onChange={(e) => setFindWord(e.target.value)}
           />
           <button onClick={handleSearch}>Search</button>
+          <button className="hidden"></button>
           <label>Replace With</label>
           <input
             className="input-sc"
@@ -343,22 +340,26 @@ export default function App() {
         </div>
       </div>
 
+      {/* ---------- nav-2 ---------- */}
       <div className="nav-2">
+        {/* Left side */}
         <div className="left-group">
           <label>Max</label>
           <input
             type="number"
+            className="input-sc"
             value={charLimit}
             onChange={(e) => setCharLimit(Number(e.target.value))}
           />
           <label>Size</label>
           <input
             type="number"
+            className="input-sc"
             value={fontSize}
             onChange={(e) => setFontSize(Number(e.target.value))}
           />
           <label>Fonts</label>
-          <select value={fontFamily} onChange={(e) => setFontFamily(e.target.value)}>
+          <select className="input-sc" value={fontFamily} onChange={(e) => setFontFamily(e.target.value)}>
             <option>Arial</option>
             <option>Courier New</option>
             <option>Georgia</option>
@@ -369,9 +370,10 @@ export default function App() {
           </select>
         </div>
 
+        {/* Right side */}
         <div className="right-group">
-          <button onClick={resetAll}>Reset</button>
-          <select
+          <button onClick={resetAll} className="reset">Reset</button>
+          <select className="download"
             onChange={(e) => {
               const val = e.target.value;
               if (val === "txt") downloadTXT();
@@ -379,7 +381,7 @@ export default function App() {
               if (val === "docx") downloadDOCX();
               if (val === "csv") downloadCSV();
               if (val === "json") downloadJSON();
-              e.target.value = "";
+              e.target.value = ""; // reset select
             }}
           >
             <option value="">Download File</option>
@@ -393,6 +395,7 @@ export default function App() {
       </div>
 
       <div className="editor-row">
+        {/* -------- Left Section -------- */}
         <div className="left-section">
           <div className="word-cloud">
             {Object.entries(wordFrequencies)
@@ -402,7 +405,6 @@ export default function App() {
                   key={word}
                   style={{
                     fontSize: `${14 + count * 2}px`,
-                    fontFamily,
                     color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`,
                   }}
                   title={`Count: ${count}`}
@@ -413,6 +415,7 @@ export default function App() {
           </div>
         </div>
 
+        {/* -------- Right Section -------- */}
         <div className="right-section">
           <textarea
             style={{ fontSize: fontSize + "px", fontFamily }}
@@ -430,20 +433,79 @@ export default function App() {
             <p>Avg Word Length: {avgWordLength()}</p>
             <p>Avg Sentence Length: {avgSentenceLength()}</p>
           </div>
-
           <div className="top-controls">
-            <button onClick={undo}>↩️ Undo</button>
-            <button onClick={redo}>↪️ Redo</button>
-            <button onClick={isListening ? stopListening : startListening}>
-              {isListening ? "Stop Voice" : "Start Voice"}
-            </button>
-            <button onClick={speakText}>Read Text</button>
+            <div className="nav-1">
+              <button onClick={undo}>↩️ Undo</button>
+              <button onClick={redo}>↪️ Redo</button>
+              <select className="select"
+                onChange={(e) => {
+                  const action = e.target.value;
+                  if (action === "upper") toUpper();
+                  if (action === "lower") toLower();
+                  if (action === "title") toTitleCase();
+                  if (action === "sentence") toSentenceCase();
+                  if (action === "spaces") removeExtraSpaces();
+                  if (action === "lines") removeLineBreaks();
+                  if (action === "sort") sortWords();
+                }}
+              >
+                <option value="">-- Select Action --</option>
+                <option value="upper">UPPER</option>
+                <option value="lower">lower</option>
+                <option value="title">Title Case</option>
+                <option value="sentence">Sentence Case</option>
+                <option value="spaces">Remove Extra Spaces</option>
+                <option value="lines">Remove Line Breaks</option>
+                <option value="sort">Sort Words</option>
+              </select>
+              <select className="select" value={voiceLang} onChange={(e) => setVoiceLang(e.target.value)}>
+                <option value="en-US">English (US)</option>
+                <option value="en-GB">English (UK)</option>
+                <option value="bn-BD">Bangla</option>
+                <option value="hi-IN">Hindi</option>
+                <option value="es-ES">Spanish</option>
+                <option value="fr-FR">French</option>
+              </select>
+              <button onClick={isListening ? stopListening : startListening}>
+                {isListening ? "Stop Voice" : "Start Voice"}
+              </button>
+              <button onClick={speakText}>Read Text</button>
+            </div>
           </div>
 
-          <div className="preview" style={{ fontFamily, fontSize: fontSize + "px", whiteSpace: "pre-wrap" }}>
+          <div className="preview" ref={previewRef}>
             <h2>Live Preview</h2>
-            {renderPreview()}
+            <div style={{ whiteSpace: "pre-wrap", textAlign: "left",fontSize: fontSize + "px", fontFamily }}>
+              {renderPreview()}
+            </div>
           </div>
+          <footer className="creative-footer">
+            <small>
+              © 2025 
+              <a href="https://www.facebook.com/m.mostafaraihan/" target="_blank" rel="noopener noreferrer">Mostafa Raihan</a>
+              <span> | Institute Of Computer Science and Technology</span>
+            </small>
+          </footer>
+
+        </div>
+      </div>
+
+      <div className="left-section section-left-2">
+        <div className="word-cloud">
+          {Object.entries(wordFrequencies)
+            .slice(0, charLimit)
+            .map(([word, count]) => (
+              <span
+                key={word}
+                style={{
+                  fontSize: `${14 + count * 2}px`,
+                  color: `hsl(${Math.floor(Math.random() * 360)}, 70%, 50%)`,
+                }}
+                title={`Count: ${count}`}
+              >
+                {word} ({count})
+              </span>
+            ))}
         </div>
       </div>
     </div>
