@@ -3,7 +3,7 @@ import "./App.css";
 import jsPDF from "jspdf";
 import { saveAs } from "file-saver";
 import * as XLSX from "xlsx";
-import { Document, Packer, Paragraph, TextRun } from "docx";
+import { Document, Packer, Paragraph } from "docx";
 
 export default function App() {
   const [text, setText] = useState("");
@@ -18,6 +18,7 @@ export default function App() {
   const [replaceWord, setReplaceWord] = useState("");
   const [isListening, setIsListening] = useState(false);
   const [voiceLang, setVoiceLang] = useState("en-US");
+  const previewRef = useRef(null);
   const recognitionRef = useRef(null);
 
   // ------------------ History ------------------
@@ -60,7 +61,7 @@ export default function App() {
   const removeLineBreaks = () => updateText(text.replace(/\n+/g, " "));
   const sortWords = () =>
     updateText(text.split(/\s+/).sort((a, b) => a.localeCompare(b)).join(" "));
-
+  
   const resetAll = () => {
     setText("");
     setHistory([]);
@@ -73,6 +74,7 @@ export default function App() {
     setFindWord("");
     setReplaceWord("");
     setVoiceLang("en-US");
+  
   };
 
   // ------------------ Word Frequencies ------------------
@@ -150,53 +152,36 @@ export default function App() {
   // ------------------ Export ------------------
   const downloadTXT = () =>
     saveAs(new Blob([text], { type: "text/plain" }), "text.txt");
-
+  
   const downloadPDF = () => {
-    const margin = 25.4;
-    const pageWidth = 210;
-    const pageHeight = 297;
-    const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const margin = 25.4; // 1 inch margin in mm
+  const pageWidth = 210; // A4 width in mm
+  const pageHeight = 297; // A4 height in mm
+  const doc = new jsPDF({
+    unit: "mm",
+    format: "a4"
+  });
 
-    const standardFonts = ["helvetica", "times", "courier"];
-    const lowerFont = fontFamily.toLowerCase();
-    doc.setFont(standardFonts.includes(lowerFont) ? lowerFont : "helvetica");
+  const lines = doc.splitTextToSize(text, pageWidth - margin * 2); // margin adjust
+  let cursorY = margin;
 
-    const lines = doc.splitTextToSize(text, pageWidth - margin * 2);
-    let cursorY = margin;
-    lines.forEach((line) => {
-      if (cursorY > pageHeight - margin) {
-        doc.addPage();
-        cursorY = margin;
-      }
-      doc.text(margin, cursorY, line);
-      cursorY += 7;
-    });
+  lines.forEach((line) => {
+    if (cursorY > pageHeight - margin) {
+      doc.addPage();
+      cursorY = margin;
+    }
+    doc.text(margin, cursorY, line);
+    cursorY += 7; // line height
+  });
 
-    doc.save("text.pdf");
-  };
+  doc.save("text.pdf");
+};
+
 
   const downloadDOCX = () => {
-    const doc = new Document({
-      sections: [
-        {
-          children: [
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: text,
-                  font: fontFamily,
-                  size: fontSize * 2,
-                }),
-              ],
-            }),
-          ],
-        },
-      ],
-    });
-
-    Packer.toBlob(doc).then((blob) => saveAs(blob, "text.docx"));
+    const docx = new Document({ sections: [{ children: [new Paragraph(text)] }] });
+    Packer.toBlob(docx).then((blob) => saveAs(blob, "text.docx"));
   };
-
   const downloadCSV = () => {
     const ws = XLSX.utils.json_to_sheet(
       Object.entries(wordFrequencies).map(([word, count]) => ({ word, count }))
@@ -205,7 +190,6 @@ export default function App() {
     XLSX.utils.book_append_sheet(wb, ws, "freq");
     XLSX.writeFile(wb, "frequency.csv");
   };
-
   const downloadJSON = () => {
     saveAs(
       new Blob([JSON.stringify({ text, frequencies: wordFrequencies }, null, 2)], {
@@ -228,38 +212,51 @@ export default function App() {
 
   // ------------------ Voice Typing ------------------
   const startListening = () => {
-    if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
-      alert("Your browser does not support Speech Recognition");
-      return;
-    }
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
-    recognition.lang = voiceLang;
-    recognition.continuous = true;
-    recognition.interimResults = true;
+  if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
+    alert("Your browser does not support Speech Recognition");
+    return;
+  }
 
-    recognition.onresult = (event) => {
-      let finalTranscript = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) finalTranscript += result[0].transcript + " ";
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  const recognition = new SpeechRecognition();
+  recognition.lang = voiceLang;
+  recognition.continuous = true;
+  recognition.interimResults = true; // true রাখলেও state-এ use করব না
+
+  recognition.onresult = (event) => {
+    let finalTranscript = "";
+
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const result = event.results[i];
+      if (result.isFinal) {
+        finalTranscript += result[0].transcript + " ";
       }
-      if (finalTranscript) setText((prev) => prev + finalTranscript);
-    };
+    }
 
-    recognition.onend = () => {
-      if (isListening) setTimeout(() => recognition.start(), 300);
-      else setIsListening(false);
-    };
+    if (finalTranscript) {
+      setText((prev) => prev + finalTranscript); // শুধুমাত্র final append
+    }
+  };
 
-    recognitionRef.current = recognition;
-    recognition.start();
-    setIsListening(true);
+  recognition.onend = () => {
+    if (isListening) {
+      setTimeout(() => recognition.start(), 300); // auto-restart
+    } else {
+      setIsListening(false);
+    }
   };
-  const stopListening = () => {
-    recognitionRef.current?.stop();
-    setIsListening(false);
-  };
+
+  recognitionRef.current = recognition;
+  recognition.start();
+  setIsListening(true);
+};
+
+const stopListening = () => {
+  recognitionRef.current?.stop();
+  setIsListening(false);
+};
 
   // ------------------ Auto Save & Load ------------------
   useEffect(() => {
@@ -271,40 +268,41 @@ export default function App() {
     localStorage.setItem("advanced_text_autosave", JSON.stringify({ text }));
   }, [text]);
 
+  
   // ------------------ Keyboard Shortcuts ------------------
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.ctrlKey || e.metaKey) {
         switch (e.key.toLowerCase()) {
-          case "z":
+          case "z": // Ctrl+Z = Undo
             e.preventDefault();
             undo();
             break;
-          case "y":
+          case "y": // Ctrl+Y = Redo
             e.preventDefault();
             redo();
             break;
-          case "s":
+          case "s": // Ctrl+S = Save TXT
             e.preventDefault();
             downloadTXT();
             break;
-          case "p":
+          case "p": // Ctrl+P = Save PDF
             e.preventDefault();
             downloadPDF();
             break;
-          case "d":
+          case "d": // Ctrl+D = Save DOCX
             e.preventDefault();
             downloadDOCX();
             break;
-          case "f":
+          case "f": // Ctrl+F = Find
             e.preventDefault();
             document.querySelector(".input-sc")?.focus();
             break;
-          case "r":
+          case "r": // Ctrl+R = Replace
             e.preventDefault();
             handleFindReplace();
             break;
-          case "l":
+          case "l": // Ctrl+L = Clear All
             e.preventDefault();
             resetAll();
             break;
@@ -316,6 +314,7 @@ export default function App() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [text, findWord, replaceWord]);
+
   return (
     <div className="app-container">
       <div className="head-top">
