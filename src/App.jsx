@@ -74,6 +74,7 @@ export default function App() {
     setFindWord("");
     setReplaceWord("");
     setVoiceLang("en-US");
+  
   };
 
   // ------------------ Word Frequencies ------------------
@@ -397,7 +398,7 @@ const stopListening = () => {
         <div className="left-section">
           <div className="word-cloud">
             {Object.entries(wordFrequencies)
-              .slice(0, 1000)
+              .slice(0, charLimit)
               .map(([word, count]) => (
                 <span
                   key={word}
@@ -465,7 +466,7 @@ const stopListening = () => {
                 <option value="fr-FR">French</option>
               </select>
               <button onClick={isListening ? stopListening : startListening}>
-                {isListening ? "Stop Voice Typing" : "Start Voice Typing"}
+                {isListening ? "Stop Voice" : "Start Voice"}
               </button>
               <button onClick={speakText}>Read Text</button>
             </div>
@@ -473,7 +474,7 @@ const stopListening = () => {
 
           <div className="preview" ref={previewRef}>
             <h2>Live Preview</h2>
-            <div style={{ whiteSpace: "pre-wrap", textAlign: "left" }}>
+            <div style={{ whiteSpace: "pre-wrap", textAlign: "left",fontSize: fontSize + "px", fontFamily }}>
               {renderPreview()}
             </div>
           </div>
@@ -491,7 +492,7 @@ const stopListening = () => {
       <div className="left-section section-left-2">
         <div className="word-cloud">
           {Object.entries(wordFrequencies)
-            .slice(0, 1000)
+            .slice(0, charLimit)
             .map(([word, count]) => (
               <span
                 key={word}
